@@ -408,7 +408,7 @@ public class mod_Rediscovered
                 {
                     Items.apple, new ItemStack(Items.potionitem, 1, 16)
                 });
-        GameRegistry.addShapelessRecipe(new ItemStack(RediscoveredPotion, 102), new Object[]
+        GameRegistry.addShapelessRecipe(new ItemStack(RediscoveredPotion, 1, 102), new Object[]
                 {
         			new ItemStack(RediscoveredPotion, 1, 2), Items.gunpowder
                 });
