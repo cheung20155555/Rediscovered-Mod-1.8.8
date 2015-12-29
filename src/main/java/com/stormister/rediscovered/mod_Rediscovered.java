@@ -54,10 +54,10 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.oredict.OreDictionary;
 import net.minecraftforge.oredict.ShapedOreRecipe;
  
-@Mod(modid = mod_Rediscovered.modid, name = "Minecraft Rediscovered Mod", version = "1.2.1")
+@Mod(modid = mod_Rediscovered.modid, name = "Minecraft Rediscovered Mod", version = "1.3")
 
 /*
- * Current Changelog - 1.2.1
+ * Current Changelog - 1.3
  * -Added splash potions and changed how current potions work
  * -Changed rotating gear animation
  * -Added Leather-Chain Chestplate with quiver
