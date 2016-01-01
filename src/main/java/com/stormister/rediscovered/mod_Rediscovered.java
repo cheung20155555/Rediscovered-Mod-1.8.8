@@ -60,7 +60,8 @@ import net.minecraftforge.oredict.ShapedOreRecipe;
  * Current Changelog - 1.3
  * -Added splash potions and changed how current potions work
  * -Changed rotating gear animation
- * -Added Leather-Chain Chestplate with quiver
+ * -Changed Leather-Chain to Studded
+ * -Added Studded Chestplate with quiver
  */
 
 public class mod_Rediscovered
