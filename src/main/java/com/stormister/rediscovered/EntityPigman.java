@@ -1,6 +1,8 @@
 package com.stormister.rediscovered;
 
 import com.google.common.base.Predicate;
+import com.stormister.rediscovered.EntityAIPigmanMate;
+import com.stormister.rediscovered.EntityAIPigmanPlay;
 
 import java.util.Iterator;
 import java.util.Random;
@@ -23,12 +25,12 @@ import net.minecraft.entity.ai.EntityAILookAtTradePlayer;
 import net.minecraft.entity.ai.EntityAIMoveIndoors;
 import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
 import net.minecraft.entity.ai.EntityAIOpenDoor;
-import net.minecraft.entity.ai.EntityAIPlay;
+//import net.minecraft.entity.ai.EntityAIPlay;
 import net.minecraft.entity.ai.EntityAIRestrictOpenDoor;
 import net.minecraft.entity.ai.EntityAISwimming;
 import net.minecraft.entity.ai.EntityAITradePlayer;
 import net.minecraft.entity.ai.EntityAIVillagerInteract;
-import net.minecraft.entity.ai.EntityAIVillagerMate;
+//import net.minecraft.entity.ai.EntityAIVillagerMate;
 import net.minecraft.entity.ai.EntityAIWander;
 import net.minecraft.entity.ai.EntityAIWatchClosest;
 import net.minecraft.entity.ai.EntityAIWatchClosest2;
@@ -63,6 +65,8 @@ import net.minecraft.util.Tuple;
 import net.minecraft.village.MerchantRecipe;
 import net.minecraft.village.MerchantRecipeList;
 import net.minecraft.village.Village;
+import net.minecraft.village.VillageCollection;
+import net.minecraft.village.VillageDoorInfo;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
@@ -76,12 +80,12 @@ public class EntityPigman extends EntityAgeable implements INpc, IMerchant
     Village villageObj;
     /** This villager's current customer. */
     private EntityPlayer buyingPlayer;
-    /** Initialises the MerchantRecipeList.java */
+    /** Initializes the MerchantRecipeList.java */
     private MerchantRecipeList buyingList;
     private int timeUntilReset;
     /** addDefaultEquipmentAndRecipies is called if this is true */
     private boolean needsInitilization;
-    private boolean isWillingToTrade;
+    private boolean isWillingToMate;
     private int wealth;
     /** Last player to trade with this villager, used for aggressivity. */
     private String lastBuyingPlayer;
@@ -89,7 +93,7 @@ public class EntityPigman extends EntityAgeable implements INpc, IMerchant
     /** This is the EntityPigman's career level value */
     private int careerLevel;
     private boolean isLookingForHome;
-    private boolean field_175564_by;
+    private boolean areAdditionalTasksSet;
     private InventoryBasic villagerInventory;
     /** A multi-dimensional array mapping the various professions, careers and career levels that a Villager may offer */
     @Deprecated //Use PigmanRegistry
@@ -116,18 +120,32 @@ public class EntityPigman extends EntityAgeable implements INpc, IMerchant
         this.tasks.addTask(3, new EntityAIRestrictOpenDoor(this));
         this.tasks.addTask(4, new EntityAIOpenDoor(this, true));
         this.tasks.addTask(5, new EntityAIMoveTowardsRestriction(this, 0.6D));
+	this.tasks.addTask(6, new EntityAIPigmanMate(this));
         this.tasks.addTask(9, new EntityAIWatchClosest2(this, EntityPlayer.class, 3.0F, 1.0F));
         this.tasks.addTask(9, new EntityAIWander(this, 0.6D));
         this.tasks.addTask(10, new EntityAIWatchClosest(this, EntityLiving.class, 8.0F));
         this.setCanPickUpLoot(true);
     }
+    
+    private void setAdditionalAItasks()
+    {
+        if (!this.areAdditionalTasksSet)
+        {
+            this.areAdditionalTasksSet = true;
 
+            if (this.isChild())
+            {
+                this.tasks.addTask(8, new EntityAIPigmanPlay(this, 0.32D));
+            }
+        }
+    }
+    
     protected void applyEntityAttributes()
     {
         super.applyEntityAttributes();
         this.getEntityAttribute(SharedMonsterAttributes.movementSpeed).setBaseValue(0.5D);
     }
-
+    
     protected void updateAITasks()
     {
         if (--this.randomTickDivider <= 0)
@@ -231,7 +249,7 @@ public class EntityPigman extends EntityAgeable implements INpc, IMerchant
         tagCompound.setInteger("Riches", this.wealth);
         tagCompound.setInteger("Career", this.careerId);
         tagCompound.setInteger("CareerLevel", this.careerLevel);
-        tagCompound.setBoolean("Willing", this.isWillingToTrade);
+        tagCompound.setBoolean("Willing", this.isWillingToMate);
 
         if (this.buyingList != null)
         {
@@ -263,7 +281,7 @@ public class EntityPigman extends EntityAgeable implements INpc, IMerchant
         this.wealth = tagCompund.getInteger("Riches");
         this.careerId = tagCompund.getInteger("Career");
         this.careerLevel = tagCompund.getInteger("CareerLevel");
-        this.isWillingToTrade = tagCompund.getBoolean("Willing");
+        this.isWillingToMate = tagCompund.getBoolean("Willing");
 
         if (tagCompund.hasKey("Offers", 10))
         {
@@ -443,9 +461,9 @@ public class EntityPigman extends EntityAgeable implements INpc, IMerchant
         return this.buyingPlayer != null;
     }
 
-    public boolean func_175550_n(boolean p_175550_1_)
+    public boolean getIsWillingToMate(boolean updateFirst)
     {
-        if (!this.isWillingToTrade && p_175550_1_ && this.func_175553_cp())
+        if (!this.isWillingToMate && updateFirst && this.func_175553_cp())
         {
             boolean flag1 = false;
 
@@ -470,18 +488,17 @@ public class EntityPigman extends EntityAgeable implements INpc, IMerchant
                 if (flag1)
                 {
                     this.worldObj.setEntityState(this, (byte)18);
-                    this.isWillingToTrade = true;
+                    this.isWillingToMate = true;
                     break;
                 }
             }
         }
-
-        return this.isWillingToTrade;
+        return this.isWillingToMate;
     }
 
-    public void func_175549_o(boolean p_175549_1_)
+    public void setIsWillingToMate(boolean willingToTrade)
     {
-        this.isWillingToTrade = p_175549_1_;
+        this.isWillingToMate = willingToTrade;
     }
 
     public void useRecipe(MerchantRecipe p_70933_1_)
@@ -495,7 +512,7 @@ public class EntityPigman extends EntityAgeable implements INpc, IMerchant
         {
             this.timeUntilReset = 40;
             this.needsInitilization = true;
-            this.isWillingToTrade = true;
+            this.isWillingToMate = true;
 
             if (this.buyingPlayer != null)
             {
@@ -734,7 +751,7 @@ public class EntityPigman extends EntityAgeable implements INpc, IMerchant
         this.isLookingForHome = true;
     }
     
-    public EntityPigman func_180488_b(EntityAgeable p_180488_1_)
+    public EntityPigman createChild(EntityAgeable ageable)
     {
         EntityPigman entityvillager = new EntityPigman(this.worldObj);
         entityvillager.onInitialSpawn(this.worldObj.getDifficultyForLocation(new BlockPos(entityvillager)), (IEntityLivingData)null);
@@ -867,11 +884,6 @@ public class EntityPigman extends EntityAgeable implements INpc, IMerchant
                 return false;
             }
         }
-    }
-
-    public EntityAgeable createChild(EntityAgeable ageable)
-    {
-        return this.func_180488_b(ageable);
     }
 
     public static class EmeraldForItems implements EntityPigman.ITradeList
